@@ -42,3 +42,15 @@
 Профиль считается “изолированным” за счёт отдельного persistent user-data каталога на `/profiles/<PROFILE_ID>`,
 а не за счёт того, что весь проект работает в контейнере целиком.
 
+### Portainer (server stack) — backend + MySQL
+
+В корне репозитория есть `docker-compose.yml` для Portainer.
+
+**Важно:** MySQL выполнит SQL из `db/init/*.sql` **только при первом старте на пустом volume**.
+Если ты уже поднимал MySQL и хочешь заново прогнать импорт — удали volume `antic_mysql_data`.
+
+Переменные окружения, которые нужно задать в Portainer Stack:
+
+- `MYSQL_PASSWORD`
+- `MYSQL_ROOT_PASSWORD`
+
