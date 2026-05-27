@@ -15,6 +15,6 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3000:3000"
+      - "${BACKEND_PORT:-3010}:3000"
     # healthcheck можно включить позже; сейчас отключён, чтобы не требовать утилиты внутри образа.
 
