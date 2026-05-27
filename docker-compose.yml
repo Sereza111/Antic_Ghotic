@@ -1,0 +1,52 @@
+services:
+  antic-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: antic-backend
+    restart: unless-stopped
+    environment:
+      PORT: "3000"
+
+      MYSQL_HOST: antic-mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: antic
+      MYSQL_USER: antic
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3000:3000"
+    depends_on:
+      antic-mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  antic-mysql:
+    image: mysql:8.4
+    container_name: antic-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: antic
+      MYSQL_USER: antic
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - antic_mysql_data:/var/lib/mysql
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  antic_mysql_data:
+
