@@ -26,8 +26,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _reload() {
     final api = AppScope.of(context).api;
     setState(() {
-      _future = api.fetchProfiles();
+      _future = api.fetchProfiles().then(
+        (list) => list
+            .map(
+              (p) => ProfileSummary(
+                id: p.id,
+                name: p.name,
+                description: p.description,
+                running: p.running || LocalProfileLauncher.isRunning(p.id),
+              ),
+            )
+            .toList(),
+      );
     });
+  }
+
+  Future<void> _createRandomProfile() async {
+    final api = AppScope.of(context).api;
+    try {
+      await api.createProfile(name: 'Random ${DateTime.now().millisecond}', randomize: true);
+      if (!mounted) return;
+      AppScope.of(context).refreshAll();
+      _reload();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Профиль со случайным fingerprint создан')),
+      );
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   Future<void> _createProfile() async {
@@ -133,6 +159,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SnackBar(content: Text('Ошибка: ${e.message}')),
         );
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$e'),
+            duration: const Duration(seconds: 10),
+          ),
+        );
+      }
     }
   }
 
@@ -167,6 +202,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               runSpacing: 10,
               children: [
                 _QuickActionButton(label: 'Создать профиль', onPressed: _createProfile),
+                _QuickActionButton(label: 'Случайный FP', onPressed: _createRandomProfile),
                 _QuickActionButton(
                   label: 'Обновить',
                   onPressed: () {

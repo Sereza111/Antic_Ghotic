@@ -78,12 +78,34 @@ class ApiClient {
         .toList();
   }
 
-  Future<ProfileSummary> createProfile({required String name, String? description}) async {
+  Future<Map<String, dynamic>> fetchProfile(String id) async {
+    final res = await _http.get(_uri('/api/profiles/$id')).timeout(const Duration(seconds: 12));
+    if (res.statusCode != 200) {
+      throw ApiException(_errorBody(res), statusCode: res.statusCode);
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateProfile(String id, Map<String, dynamic> patch) async {
+    final res = await _http
+        .patch(
+          _uri('/api/profiles/$id'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(patch),
+        )
+        .timeout(const Duration(seconds: 12));
+    if (res.statusCode != 200) {
+      throw ApiException(_errorBody(res), statusCode: res.statusCode);
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<ProfileSummary> createProfile({required String name, String? description, bool randomize = false}) async {
     final res = await _http
         .post(
           _uri('/api/profiles'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'name': name, 'description': description}),
+          body: jsonEncode({'name': name, 'description': description, 'randomize': randomize}),
         )
         .timeout(const Duration(seconds: 12));
     if (res.statusCode != 201) {
@@ -154,7 +176,7 @@ class ApiClient {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<void> runScript({
+  Future<Map<String, dynamic>> runScript({
     required String profileId,
     required String scriptId,
   }) async {
@@ -164,10 +186,11 @@ class ApiClient {
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'profileId': profileId, 'scriptId': scriptId}),
         )
-        .timeout(const Duration(seconds: 15));
+        .timeout(const Duration(seconds: 30));
     if (res.statusCode != 201) {
       throw ApiException(_errorBody(res), statusCode: res.statusCode);
     }
+    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   String _errorBody(http.Response res) {

@@ -4,6 +4,7 @@ import 'package:antic_frontend/app_scope.dart';
 import 'package:antic_frontend/models/automation_script_summary.dart';
 import 'package:antic_frontend/models/profile_summary.dart';
 import 'package:antic_frontend/services/api_client.dart';
+import 'package:antic_frontend/services/local_profile_launcher.dart';
 import 'package:antic_frontend/widgets/gothic_card.dart';
 
 class AutomationScreen extends StatefulWidget {
@@ -55,12 +56,20 @@ class _AutomationScreenState extends State<AutomationScreen> {
     if (profile == null) return;
 
     try {
-      await api.runScript(profileId: profile.id, scriptId: script.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Запуск записан: ${script.name} → ${profile.name}')),
+      final result = await api.runScript(profileId: profile.id, scriptId: script.id);
+      if (result['mode'] == 'local') {
+        await LocalProfileLauncher.start(
+          profileId: profile.id,
+          profileJson: Map<String, dynamic>.from(result['profile'] as Map),
+          targetUrl: (result['targetUrl'] as String?) ?? 'https://example.com/',
         );
       }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Сценарий ${script.name}: браузер на ПК')),
+        );
+      }
+      AppScope.of(context).refreshAll();
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
