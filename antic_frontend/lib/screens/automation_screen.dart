@@ -1,60 +1,105 @@
 import 'package:flutter/material.dart';
 
+import 'package:antic_frontend/app_scope.dart';
 import 'package:antic_frontend/models/automation_script_summary.dart';
+import 'package:antic_frontend/models/profile_summary.dart';
 import 'package:antic_frontend/services/api_client.dart';
 import 'package:antic_frontend/widgets/gothic_card.dart';
 
-class AutomationScreen extends StatelessWidget {
+class AutomationScreen extends StatefulWidget {
   const AutomationScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    const api = ApiClient(baseUrl: ApiClient.defaultBaseUrl);
+  State<AutomationScreen> createState() => _AutomationScreenState();
+}
 
-    return FutureBuilder<List<AutomationScriptSummary>>(
-      future: api.fetchScripts(),
+class _AutomationScreenState extends State<AutomationScreen> {
+  late Future<({List<AutomationScriptSummary> scripts, List<ProfileSummary> profiles})> _future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final api = AppScope.of(context).api;
+    _future = () async {
+      final scripts = await api.fetchScripts();
+      final profiles = await api.fetchProfiles();
+      return (scripts: scripts, profiles: profiles);
+    }();
+  }
+
+  Future<void> _run(AutomationScriptSummary script, List<ProfileSummary> profiles) async {
+    final api = AppScope.of(context).api;
+    if (profiles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Сначала создай профиль')),
+      );
+      return;
+    }
+
+    final profile = profiles.length == 1
+        ? profiles.first
+        : await showDialog<ProfileSummary>(
+            context: context,
+            builder: (ctx) => SimpleDialog(
+              backgroundColor: const Color(0xFF111111),
+              title: const Text('Выбери профиль'),
+              children: profiles
+                  .map((p) => SimpleDialogOption(
+                        onPressed: () => Navigator.pop(ctx, p),
+                        child: Text(p.name),
+                      ))
+                  .toList(),
+            ),
+          );
+
+    if (profile == null) return;
+
+    try {
+      await api.runScript(profileId: profile.id, scriptId: script.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Запуск записан: ${script.name} → ${profile.name}')),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: ${e.message}')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<({List<AutomationScriptSummary> scripts, List<ProfileSummary> profiles})>(
+      future: _future,
       builder: (context, snapshot) {
-        final scripts = snapshot.data ?? const [];
+        if (snapshot.hasError) {
+          return Center(child: Text('Ошибка: ${snapshot.error}'));
+        }
+
+        final data = snapshot.data;
+        final scripts = data?.scripts ?? const [];
+        final profiles = data?.profiles ?? const [];
 
         return ListView(
           padding: EdgeInsets.zero,
           children: [
             const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                'Automation',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
+            Text('Automation', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
             if (snapshot.connectionState == ConnectionState.waiting)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
-                ),
-              )
+              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
             else
               ...scripts.map((s) => Padding(
                     padding: const EdgeInsets.fromLTRB(6, 0, 6, 12),
                     child: GothicCard(
                       borderColor: const Color(0xFF3A3A3A),
-                      onTap: () async {
-                        // В UI пока нет выбора profile — используем demo.
-                        await api.runScript(profileId: 'p1', scriptId: s.id);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Запуск: ${s.name}')),
-                          );
-                        }
-                      },
+                      onTap: () => _run(s, profiles),
                       child: _ScriptCardContent(script: s),
                     ),
                   )),
-            const SizedBox(height: 10),
           ],
         );
       },
@@ -71,12 +116,7 @@ class _ScriptCardContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          script.name,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
+        Text(script.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         if (script.description != null)
           Text(
@@ -90,14 +130,10 @@ class _ScriptCardContent extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: Text(
             'Run →',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white, letterSpacing: 2),
           ),
         ),
       ],
     );
   }
 }
-

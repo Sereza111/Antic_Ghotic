@@ -1,41 +1,135 @@
-import 'dart:async';
+import 'dart:convert';
 
 import 'package:antic_frontend/models/automation_script_summary.dart';
 import 'package:antic_frontend/models/profile_summary.dart';
+import 'package:http/http.dart' as http;
 
-/// Заглушка клиентского слоя для UI.
-/// На старте возвращаем мок-данные, чтобы можно было собрать интерфейс.
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  ApiException(this.message, {this.statusCode});
+
+  @override
+  String toString() => message;
+}
+
 class ApiClient {
   final String baseUrl;
+  final http.Client _http;
 
-  const ApiClient({required this.baseUrl});
+  ApiClient({required this.baseUrl, http.Client? httpClient})
+      : _http = httpClient ?? http.Client();
 
-  // Конфиг плейсхолдера. В реальном проекте подтянем из env/настроек.
-  static const defaultBaseUrl = 'http://SERVER:3000';
+  Uri _uri(String path) => Uri.parse('$baseUrl$path');
+
+  Future<void> checkHealth() async {
+    final res = await _http
+        .get(_uri('/health'))
+        .timeout(const Duration(seconds: 8));
+    if (res.statusCode != 200) {
+      throw ApiException('Health failed: ${res.statusCode}', statusCode: res.statusCode);
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (body['ok'] != true) {
+      throw ApiException('Backend not ok');
+    }
+    // Старый образ отдаёт только {"ok":true} без db и без /api/*
+    if (body['db'] != true) {
+      throw ApiException(
+        'На сервере старый backend. В Portainer: Pull & redeploy stack (rebuild).',
+      );
+    }
+
+    final profilesRes = await _http
+        .get(_uri('/api/profiles'))
+        .timeout(const Duration(seconds: 8));
+    if (profilesRes.statusCode == 404) {
+      throw ApiException(
+        'Нет маршрута /api/profiles — обнови backend на сервере (git push + redeploy).',
+      );
+    }
+    if (profilesRes.statusCode != 200) {
+      throw ApiException(_errorBody(profilesRes), statusCode: profilesRes.statusCode);
+    }
+  }
 
   Future<List<ProfileSummary>> fetchProfiles() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return const [
-      ProfileSummary(id: 'p1', name: 'Готика-1', description: 'Демо профиль', running: false),
-      ProfileSummary(id: 'p2', name: 'Готика-2', description: 'Ещё один профиль', running: true),
-    ];
+    final res = await _http
+        .get(_uri('/api/profiles'))
+        .timeout(const Duration(seconds: 12));
+    if (res.statusCode != 200) {
+      throw ApiException(_errorBody(res), statusCode: res.statusCode);
+    }
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list
+        .map((e) => ProfileSummary(
+              id: e['id'] as String,
+              name: e['name'] as String,
+              description: e['description'] as String?,
+              running: e['running'] == true,
+            ))
+        .toList();
+  }
+
+  Future<ProfileSummary> createProfile({required String name, String? description}) async {
+    final res = await _http
+        .post(
+          _uri('/api/profiles'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'name': name, 'description': description}),
+        )
+        .timeout(const Duration(seconds: 12));
+    if (res.statusCode != 201) {
+      throw ApiException(_errorBody(res), statusCode: res.statusCode);
+    }
+    final e = jsonDecode(res.body) as Map<String, dynamic>;
+    return ProfileSummary(
+      id: e['id'] as String,
+      name: e['name'] as String,
+      description: e['description'] as String?,
+      running: false,
+    );
   }
 
   Future<List<AutomationScriptSummary>> fetchScripts() async {
-    await Future.delayed(const Duration(milliseconds: 200));
-    return const [
-      AutomationScriptSummary(id: 's1', name: 'Открыть URL', description: 'Демо сценарий'),
-      AutomationScriptSummary(id: 's2', name: 'Скриншот страницы', description: 'Демо сценарий'),
-    ];
+    final res = await _http
+        .get(_uri('/api/scripts'))
+        .timeout(const Duration(seconds: 12));
+    if (res.statusCode != 200) {
+      throw ApiException(_errorBody(res), statusCode: res.statusCode);
+    }
+    final list = jsonDecode(res.body) as List<dynamic>;
+    return list
+        .map((e) => AutomationScriptSummary(
+              id: e['id'] as String,
+              name: e['name'] as String,
+              description: e['description'] as String?,
+            ))
+        .toList();
   }
 
   Future<void> runScript({
     required String profileId,
     required String scriptId,
   }) async {
-    // Пока просто имитируем запуск.
-    await Future.delayed(const Duration(milliseconds: 400));
-    // В будущем: POST /api/runs на удаленный backend.
+    final res = await _http
+        .post(
+          _uri('/api/runs'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'profileId': profileId, 'scriptId': scriptId}),
+        )
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 201) {
+      throw ApiException(_errorBody(res), statusCode: res.statusCode);
+    }
+  }
+
+  String _errorBody(http.Response res) {
+    try {
+      final m = jsonDecode(res.body) as Map<String, dynamic>;
+      return m['error']?.toString() ?? 'HTTP ${res.statusCode}';
+    } catch (_) {
+      return 'HTTP ${res.statusCode}: ${res.body}';
+    }
   }
 }
-

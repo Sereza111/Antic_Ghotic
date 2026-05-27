@@ -1,43 +1,45 @@
 import 'package:flutter/material.dart';
 
+import 'package:antic_frontend/app_scope.dart';
 import 'package:antic_frontend/models/profile_summary.dart';
 import 'package:antic_frontend/screens/profile_details_screen.dart';
-import 'package:antic_frontend/services/api_client.dart';
 import 'package:antic_frontend/widgets/gothic_card.dart';
 
-class ProfilesScreen extends StatelessWidget {
+class ProfilesScreen extends StatefulWidget {
   const ProfilesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    const api = ApiClient(baseUrl: ApiClient.defaultBaseUrl);
+  State<ProfilesScreen> createState() => _ProfilesScreenState();
+}
 
+class _ProfilesScreenState extends State<ProfilesScreen> {
+  late Future<List<ProfileSummary>> _future;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _future = AppScope.of(context).api.fetchProfiles();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder<List<ProfileSummary>>(
-      future: api.fetchProfiles(),
+      future: _future,
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Ошибка: ${snapshot.error}'));
+        }
+
         final profiles = snapshot.data ?? const [];
 
         return ListView(
           padding: EdgeInsets.zero,
           children: [
             const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                'Профили',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
+            Text('Профили', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 10),
             if (snapshot.connectionState == ConnectionState.waiting)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
-                ),
-              )
+              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
             else
               ...profiles.map(
                 (p) => Padding(
@@ -47,10 +49,7 @@ class ProfilesScreen extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => ProfileDetailsScreen(
-                            profileId: p.id,
-                            initialName: p.name,
-                          ),
+                          builder: (_) => ProfileDetailsScreen(profileId: p.id, initialName: p.name),
                         ),
                       );
                     },
@@ -78,12 +77,7 @@ class _ProfileListItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                profile.name,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
+              Text(profile.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               if (profile.description != null)
                 Text(
@@ -113,4 +107,3 @@ class _ProfileListItem extends StatelessWidget {
     );
   }
 }
-
