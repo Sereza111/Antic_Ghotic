@@ -2,7 +2,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# зависимости
+# API-only образ (браузер запускается на ПК). Для server-режима см. PROFILE_EXECUTION=server + playwright-образ.
 COPY package.json ./
 RUN npm install --omit=dev
 

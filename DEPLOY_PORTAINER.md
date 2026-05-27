@@ -24,9 +24,12 @@
 
 ## Env в стеке
 
-- `MYSQL_HOST` — хост твоей MySQL (не `antic-mysql`)
+- `MYSQL_HOST` — **IP сервера**, где крутится MySQL (часто тот же `93.189.230.198`).  
+  **Нельзя** `127.0.0.1` / `localhost` — из контейнера это «сам контейнер», не твоя БД.
 - `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`
 - `BACKEND_PORT` — внешний порт (например `3010`)
+
+После старта смотри логи: `[antic] MySQL OK` или `MySQL FAILED`.
 
 ## MySQL
 

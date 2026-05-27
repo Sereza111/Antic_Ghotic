@@ -3,16 +3,20 @@ const cors = require('cors');
 const { randomUUID } = require('crypto');
 
 const { getPool } = require('./db');
+const { startProfile, stopProfile, isProfileRunning } = require('./profile/profileLauncher');
 
 /** Меняй при деплое — по логам в Portainer видно, какая версия реально запущена. */
-const API_VERSION = '0.2.1';
+const API_VERSION = '0.2.3';
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/version', (_req, res) => {
-  res.json({ version: API_VERSION, routes: ['/health', '/api/profiles', '/api/scripts'] });
+  res.json({
+    version: API_VERSION,
+    routes: ['/health', '/api/profiles', '/api/profiles/:id/start', '/api/profiles/:id/stop', '/api/scripts'],
+  });
 });
 
 app.get('/health', async (_req, res) => {
@@ -43,9 +47,28 @@ app.get('/api/profiles', async (_req, res) => {
         id: r.id,
         name: r.name,
         description: r.description,
-        running: Boolean(r.running),
+        running: Boolean(r.running) || isProfileRunning(r.id),
       })),
     );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/profiles/:id/start', async (req, res) => {
+  try {
+    const targetUrl = req.body?.targetUrl ? String(req.body.targetUrl) : undefined;
+    const result = await startProfile(req.params.id, targetUrl);
+    res.json(result);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
+  }
+});
+
+app.post('/api/profiles/:id/stop', async (req, res) => {
+  try {
+    const result = await stopProfile(req.params.id);
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -185,7 +208,15 @@ app.post('/api/runs', async (req, res) => {
 });
 
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`[antic] backend v${API_VERSION} listening on :${port}`);
-  console.log('[antic] routes: GET /health, GET /api/profiles, GET /api/scripts');
+  console.log('[antic] routes: profiles start/stop, scripts, runs');
+  try {
+    const pool = getPool();
+    await pool.query('SELECT 1');
+    console.log(`[antic] MySQL OK → ${process.env.MYSQL_HOST}:${process.env.MYSQL_PORT || 3306}/${process.env.MYSQL_DATABASE}`);
+  } catch (err) {
+    console.error('[antic] MySQL FAILED:', err.message);
+    console.error('[antic] MYSQL_HOST должен быть IP сервера с MySQL, не 127.0.0.1 из контейнера');
+  }
 });

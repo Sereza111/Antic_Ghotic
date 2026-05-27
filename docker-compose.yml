@@ -14,7 +14,20 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      PROFILES_DIR: /profiles
+      ARTIFACTS_DIR: /artifacts
+      # local = браузер на ПК пользователя; server = headless в контейнере (обычно не нужно)
+      PROFILE_EXECUTION: ${PROFILE_EXECUTION:-local}
+      PROFILE_KEEP_ALIVE_SECONDS: ${PROFILE_KEEP_ALIVE_SECONDS:-120}
+      DEFAULT_TARGET_URL: ${DEFAULT_TARGET_URL:-https://example.com/}
     ports:
       - "${BACKEND_PORT:-3010}:3000"
+    volumes:
+      - antic_profiles_data:/profiles
+      - antic_artifacts_data:/artifacts
     # healthcheck можно включить позже; сейчас отключён, чтобы не требовать утилиты внутри образа.
+
+volumes:
+  antic_profiles_data:
+  antic_artifacts_data:
 

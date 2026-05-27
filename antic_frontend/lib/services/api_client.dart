@@ -33,10 +33,17 @@ class ApiClient {
     if (body['ok'] != true) {
       throw ApiException('Backend not ok');
     }
-    // Старый образ отдаёт только {"ok":true} без db и без /api/*
     if (body['db'] != true) {
+      final err = body['error']?.toString();
+      if (body['version'] == null && err == null) {
+        throw ApiException(
+          'Старый backend без API. Portainer: rebuild stack из GitHub.',
+        );
+      }
       throw ApiException(
-        'На сервере старый backend. В Portainer: Pull & redeploy stack (rebuild).',
+        err != null && err.isNotEmpty
+            ? 'MySQL: $err\nПроверь MYSQL_HOST в Portainer (не localhost из контейнера).'
+            : 'Нет связи с MySQL. Проверь env и импорт db/antic_full.sql',
       );
     }
 
@@ -92,20 +99,59 @@ class ApiClient {
   }
 
   Future<List<AutomationScriptSummary>> fetchScripts() async {
+    Object? lastError;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final res = await _http
+            .get(_uri('/api/scripts'))
+            .timeout(const Duration(seconds: 20));
+        if (res.statusCode != 200) {
+          throw ApiException(_errorBody(res), statusCode: res.statusCode);
+        }
+        final list = jsonDecode(res.body) as List<dynamic>;
+        return list
+            .map((e) => AutomationScriptSummary(
+                  id: e['id'] as String,
+                  name: e['name'] as String,
+                  description: e['description'] as String?,
+                ))
+            .toList();
+      } catch (e) {
+        lastError = e;
+        await Future.delayed(Duration(milliseconds: 400 * (attempt + 1)));
+      }
+    }
+    throw ApiException(lastError.toString());
+  }
+
+  Future<Map<String, dynamic>> startProfile(
+    String profileId, {
+    String? targetUrl,
+  }) async {
     final res = await _http
-        .get(_uri('/api/scripts'))
-        .timeout(const Duration(seconds: 12));
+        .post(
+          _uri('/api/profiles/$profileId/start'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({if (targetUrl != null) 'targetUrl': targetUrl}),
+        )
+        .timeout(const Duration(seconds: 30));
     if (res.statusCode != 200) {
       throw ApiException(_errorBody(res), statusCode: res.statusCode);
     }
-    final list = jsonDecode(res.body) as List<dynamic>;
-    return list
-        .map((e) => AutomationScriptSummary(
-              id: e['id'] as String,
-              name: e['name'] as String,
-              description: e['description'] as String?,
-            ))
-        .toList();
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> stopProfile(String profileId) async {
+    final res = await _http
+        .post(
+          _uri('/api/profiles/$profileId/stop'),
+          headers: {'Content-Type': 'application/json'},
+        )
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) {
+      throw ApiException(_errorBody(res), statusCode: res.statusCode);
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   Future<void> runScript({

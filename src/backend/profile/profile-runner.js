@@ -51,8 +51,10 @@ async function main() {
   const screen = fp.screen || {};
   const timezone = fp.timezone || {};
 
+  const headless = String(process.env.HEADLESS || 'true').toLowerCase() !== 'false';
+
   const launchOptions = {
-    headless: true,
+    headless,
     userAgent: navigator.userAgent || undefined,
     // locale/timezoneId настраиваются отдельно, т.к. зависят от доступных полей профиля.
     locale: undefined,

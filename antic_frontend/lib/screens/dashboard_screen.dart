@@ -4,6 +4,7 @@ import 'package:antic_frontend/app_scope.dart';
 import 'package:antic_frontend/models/profile_summary.dart';
 import 'package:antic_frontend/screens/profile_details_screen.dart';
 import 'package:antic_frontend/services/api_client.dart';
+import 'package:antic_frontend/services/local_profile_launcher.dart';
 import 'package:antic_frontend/widgets/gothic_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -62,6 +63,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SnackBar(content: Text('Профиль создан: $name')),
         );
       }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ошибка: ${e.message}')),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleProfile(ProfileSummary profile) async {
+    final api = AppScope.of(context).api;
+    try {
+      if (profile.running || LocalProfileLauncher.isRunning(profile.id)) {
+        await LocalProfileLauncher.stop(profile.id);
+        await api.stopProfile(profile.id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Профиль остановлен: ${profile.name}')),
+        );
+      } else {
+        final urlController = TextEditingController(text: 'https://example.com/');
+        final url = await showDialog<String>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF111111),
+            title: Text('Запуск: ${profile.name}'),
+            content: TextField(
+              controller: urlController,
+              decoration: const InputDecoration(labelText: 'URL'),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, urlController.text.trim()),
+                child: const Text('Запустить'),
+              ),
+            ],
+          ),
+        );
+        if (url == null || url.isEmpty) return;
+        final result = await api.startProfile(profile.id, targetUrl: url);
+        if (!mounted) return;
+
+        if (result['mode'] == 'local') {
+          final profileJson = Map<String, dynamic>.from(result['profile'] as Map);
+          await LocalProfileLauncher.start(
+            profileId: profile.id,
+            profileJson: profileJson,
+            targetUrl: (result['targetUrl'] as String?) ?? url,
+          );
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Браузер запускается на этом ПК (Chromium + профиль).'),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Сессия запущена на сервере (headless).')),
+          );
+        }
+      }
+      AppScope.of(context).refreshAll();
+      _reload();
     } on ApiException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -141,7 +206,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         );
                       },
-                      child: _ProfileCardContent(profile: p),
+                      child: _ProfileCardContent(
+                        profile: p,
+                        onToggleRun: () => _toggleProfile(p),
+                      ),
                     ),
                   )),
             const SizedBox(height: 10),
@@ -260,7 +328,8 @@ class _StatItem extends StatelessWidget {
 
 class _ProfileCardContent extends StatelessWidget {
   final ProfileSummary profile;
-  const _ProfileCardContent({required this.profile});
+  final VoidCallback onToggleRun;
+  const _ProfileCardContent({required this.profile, required this.onToggleRun});
 
   @override
   Widget build(BuildContext context) {
@@ -286,16 +355,15 @@ class _ProfileCardContent extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 14),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: Theme.of(context).dividerColor),
-            color: const Color(0xFF121212),
+        TextButton(
+          onPressed: onToggleRun,
+          style: TextButton.styleFrom(
+            foregroundColor: statusColor,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            side: BorderSide(color: Theme.of(context).dividerColor),
+            backgroundColor: const Color(0xFF121212),
           ),
-          child: Text(
-            profile.running ? 'RUNNING' : 'STOPPED',
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(color: statusColor),
-          ),
+          child: Text(profile.running ? '■ Стоп' : '▶ Старт'),
         ),
       ],
     );
