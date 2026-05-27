@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dev Todo List - Gothic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=EB+Garamond:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'EB Garamond', 'Cormorant Garamond', serif;
+            background: linear-gradient(135deg, #050505 0%, #0b0b0b 50%, #070707 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+            color: #e6e6e6;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Готический фон с узорами */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, rgba(10, 10, 10, 0.95) 0%, rgba(15, 15, 15, 0.95) 100%);
+            border: 2px solid #2e2e2e;
+            border-radius: 0;
+            padding: 40px;
+            box-shadow:
+                0 0 60px rgba(0, 0, 0, 0.9),
+                inset 0 0 30px rgba(255, 255, 255, 0.04),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Готические углы */
+        .container::before {
+            content: '✠';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            font-size: 24px;
+            color: #5a5a5a;
+        }
+
+        .container::after {
+            content: '✠';
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            font-size: 24px;
+            color: #5a5a5a;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffffff;
+            margin-bottom: 5px;
+            font-size: 3em;
+            font-family: 'UnifrakturMaguntia', 'Cinzel', serif;
+            font-weight: 400;
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.08);
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            font-style: italic;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3a3a3a, transparent);
+            margin: 20px 0;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+        }
+
+        .input-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            background: rgba(18, 18, 18, 0.8);
+            padding: 20px;
+            border: 1px solid #333333;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.04);
+        }
+
+        #taskInput {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: 1px solid #3a3a3a;
+            background: rgba(15, 15, 15, 0.9);
+            color: #e8e8e8;
+            font-family: 'EB Garamond', serif;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        #taskInput::placeholder {
+            color: #808080;
+        }
+
+        #taskInput:focus {
+            outline: none;
+            border-color: #5a5a5a;
+            background: rgba(18, 18, 18, 0.95);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.08), inset 0 0 5px rgba(255, 255, 255, 0.05);
+        }
+
+        .priority-select, .category-select, #dueDateInput, #dueTimeInput {
+            padding: 12px 15px;
+            border: 1px solid #3a3a3a;
+            background: rgba(15, 15, 15, 0.9);
+            color: #e8e8e8;
+            font-family: 'EB Garamond', serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .priority-select:focus, .category-select:focus, #dueDateInput:focus, #dueTimeInput:focus {
+            outline: none;
+            border-color: #5a5a5a;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.08);
+        }
+
+        .priority-select option, .category-select option {
+            background: #1a1a1a;
+            color: #e8e8e8;
+        }
+
+        #addBtn {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #1e1e1e 0%, #141414 100%);
+            color: #ffffff;
+            border: 1px solid #5a5a5a;
+            font-family: 'Cinzel', serif;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        #addBtn:hover {
+            background: linear-gradient(135deg, #2a2a2a, #1b1b1b);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.08), inset 0 0 10px rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+        }
+
+        #addBtn:active {
+            transform: translateY(2px);
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 15px;
+            background: rgba(18, 18, 18, 0.6);
+            border: 1px solid #333333;
+        }
+
+        .filter-btn, .tab {
+            padding: 10px 18px;
+            border: 1px solid #3a3a3a;
+            background: rgba(15, 15, 15, 0.7);
+            color: #b0b0b0;
+            font-family: 'EB Garamond', serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .filter-btn:hover, .tab:hover {
+            border-color: #5a5a5a;
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+        }
+
+        .filter-btn.active, .tab.active {
+            background: linear-gradient(135deg, #222222 0%, #171717 100%);
+            color: #ffffff;
+            border-color: #5a5a5a;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.06);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0 20px 0;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(18, 18, 18, 0.6) 0%, rgba(14, 14, 14, 0.6) 100%);
+            border: 1px solid #333333;
+            box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.04);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffffff;
+            font-family: 'Cinzel', serif;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        #taskList {
+            list-style: none;
+        }
+
+        .task-item {
+            background: linear-gradient(135deg, rgba(22, 22, 22, 0.7) 0%, rgba(18, 18, 18, 0.7) 100%);
+            padding: 18px;
+            margin-bottom: 12px;
+            border-left: 4px solid;
+            border: 1px solid #333333;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+            animation: slideIn 0.4s ease-out;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.04);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .task-item:hover {
+            background: linear-gradient(135deg, rgba(30, 30, 30, 0.75) 0%, rgba(22, 22, 22, 0.75) 100%);
+            border-color: #5a5a5a;
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.08), inset 0 0 10px rgba(255, 255, 255, 0.05);
+        }
+
+        .task-item.completed {
+            opacity: 0.5;
+            background: linear-gradient(135deg, rgba(25, 25, 25, 0.6) 0%, rgba(20, 20, 20, 0.6) 100%);
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #808080;
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            accent-color: #ffffff;
+            appearance: none;
+            border: 1px solid #3a3a3a;
+            background: rgba(15, 15, 15, 0.9);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        .task-checkbox:hover {
+            border-color: #5a5a5a;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.08);
+        }
+
+        .task-checkbox:checked {
+            background: linear-gradient(135deg, #222222 0%, #171717 100%);
+            border-color: #5a5a5a;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23ffffff' d='M13.78 4.22a.75.75 0 010 1.06l-7.5 7.5a.75.75 0 01-1.06 0l-3.75-3.75a.75.75 0 011.06-1.06L6 10.94l6.72-6.72a.75.75 0 011.06 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 100%;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-text {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #e8e8e8;
+            font-family: 'EB Garamond', serif;
+        }
+
+        .task-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #a0a0a0;
+            flex-wrap: wrap;
+        }
+
+        .task-badge {
+            padding: 4px 10px;
+            border-radius: 0;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid;
+            background: rgba(20, 20, 20, 0.6);
+        }
+
+        .priority-high { border-color: #d0d0d0; color: #ffffff; }
+        .priority-medium { border-color: #9a9a9a; color: #dedede; }
+        .priority-low { border-color: #6e6e6e; color: #bdbdbd; }
+
+        .category-badge {
+            background: rgba(26, 26, 26, 0.6);
+            color: #ffffff;
+            padding: 4px 10px;
+            border-radius: 0;
+            font-size: 11px;
+            border: 1px solid #3a3a3a;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-btn {
+            padding: 8px 12px;
+            border: 1px solid #3a3a3a;
+            background: rgba(26, 26, 26, 0.7);
+            color: #b0b0b0;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .edit-btn:hover {
+            background: rgba(40, 40, 40, 0.9);
+            border-color: #5a5a5a;
+            color: #ffffff;
+        }
+
+        .delete-btn:hover {
+            background: rgba(60, 0, 0, 0.6);
+            border-color: #6a0000;
+            color: #ffffff;
+        }
+
+        .deps-btn:hover {
+            background: rgba(30, 30, 30, 0.9);
+            border-color: #5a5a5a;
+            color: #ffffff;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #808080;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .empty-state p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-style: italic;
+        }
+
+        /* Готический орнамент */
+        .ornament {
+            text-align: center;
+            color: #3a3a3a;
+            font-size: 18px;
+            margin: 25px 0;
+            letter-spacing: 8px;
+        }
+
+        /* Views */
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* Calendar */
+        .calendar {
+            border: 1px solid #333333;
+            background: rgba(18, 18, 18, 0.6);
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0 15px 0;
+        }
+        .calendar-title { font-family: 'Cinzel', serif; font-size: 20px; color: #ffffff; }
+        .calendar-nav { display: flex; gap: 10px; }
+        .calendar-btn {
+            padding: 8px 12px;
+            border: 1px solid #3a3a3a;
+            background: rgba(15, 15, 15, 0.9);
+            color: #ffffff;
+            cursor: pointer;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+        }
+        .calendar-weekday {
+            text-align: center;
+            color: #a0a0a0;
+            font-size: 12px;
+            padding: 6px 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .calendar-cell {
+            min-height: 110px;
+            border: 1px solid #2a2a2a;
+            padding: 8px;
+            background: rgba(12, 12, 12, 0.9);
+        }
+        .calendar-cell.today { border-color: #5a5a5a; box-shadow: inset 0 0 0 1px #5a5a5a; }
+        .calendar-cell.other-month { opacity: 0.35; }
+        .calendar-day-number { color: #bdbdbd; font-size: 12px; margin-bottom: 6px; }
+        .calendar-task {
+            font-size: 12px;
+            color: #e8e8e8;
+            background: #1a1a1a;
+            border: 1px solid #333333;
+            padding: 4px 6px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: transform 0.08s ease;
+        }
+        .calendar-task:hover { transform: translateY(-1px); }
+
+        /* Graph */
+        #graph {
+            height: 480px;
+            border: 1px solid #333333;
+            background: #0f0f0f;
+        }
+        .graph-legend {
+            display: flex;
+            gap: 12px;
+            color: #a0a0a0;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        .legend-badge { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: middle; border: 1px solid #555; }
+        .legend-active { background: #1f1f1f; }
+        .legend-done { background: #2f2f2f; }
+        .legend-high { border-color: #ffffff; }
+
+        /* Modal */
+        .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 10; }
+        .modal.show { display: flex; }
+        .modal-content { width: 560px; max-width: 90vw; background: #111111; border: 1px solid #3a3a3a; padding: 20px; }
+        .modal-title { font-family: 'Cinzel', serif; color: #ffffff; margin-bottom: 12px; }
+        .deps-list { max-height: 300px; overflow: auto; border: 1px solid #2a2a2a; padding: 10px; background: #0f0f0f; }
+        .deps-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; color: #d0d0d0; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+        .btn { padding: 8px 12px; border: 1px solid #3a3a3a; background: #1a1a1a; color: #ffffff; cursor: pointer; }
+        .btn:hover { background: #222222; border-color: #5a5a5a; }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .input-section {
+                flex-direction: column;
+            }
+
+            #taskInput, .priority-select, .category-select, #addBtn {
+                width: 100%;
+            }
+
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+    <style>
+        /* Narrow ornaments for Gothic tone */
+        .hr-thin { height: 1px; background: linear-gradient(90deg, transparent, #2a2a2a, transparent); margin: 12px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚜ CODEX TODO ⚜</h1>
+        <p class="subtitle">Архив задач кодера</p>
+        <div class="divider"></div>
+
+        <div class="tabs">
+            <button class="tab active" data-view="listView">Список</button>
+            <button class="tab" data-view="calendarView">Календарь</button>
+            <button class="tab" data-view="graphView">Цепочки</button>
+        </div>
+
+        <div id="listView" class="view active">
+            <div class="input-section">
+                <input type="text" id="taskInput" placeholder="Введи задачу...">
+                <input type="date" id="dueDateInput" title="Срок">
+                <select class="priority-select" id="prioritySelect">
+                    <option value="low">▼ Низкий приоритет</option>
+                    <option value="medium" selected>▼ Средний приоритет</option>
+                    <option value="high">▼ Высокий приоритет</option>
+                </select>
+                <select class="category-select" id="categorySelect">
+                    <option value="coding">Кодирование</option>
+                    <option value="bug">Ошибка</option>
+                    <option value="feature">Функция</option>
+                    <option value="docs">Документация</option>
+                    <option value="testing">Тестирование</option>
+                    <option value="review">Ревью</option>
+                </select>
+                <button id="addBtn">⚔ Добавить</button>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalTasks">0</div>
+                    <div class="stat-label">Всего задач</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="activeTasks">0</div>
+                    <div class="stat-label">Активных</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="completedTasks">0</div>
+                    <div class="stat-label">Завершено</div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">Все</button>
+                <button class="filter-btn" data-filter="active">Активные</button>
+                <button class="filter-btn" data-filter="completed">Завершено</button>
+                <button class="filter-btn" data-filter="high">Срочное</button>
+            </div>
+
+            <div class="ornament">✠ ✠ ✠</div>
+
+            <ul id="taskList"></ul>
+
+            <div class="empty-state" id="emptyState">
+                <div class="empty-state-icon">📜</div>
+                <p>Нет ни одной записи в кодексе</p>
+            </div>
+        </div>
+
+        <div id="calendarView" class="view">
+            <div class="calendar">
+                <div class="calendar-header">
+                    <div class="calendar-title" id="calendarTitle"></div>
+                    <div class="calendar-nav">
+                        <button class="calendar-btn" id="prevMonth">◀</button>
+                        <button class="calendar-btn" id="todayMonth">Сегодня</button>
+                        <button class="calendar-btn" id="nextMonth">▶</button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="calendarGridWeekdays"></div>
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+        </div>
+
+        <div id="graphView" class="view">
+            <div id="graph"></div>
+            <div class="graph-legend">
+                <span><span class="legend-badge legend-active"></span>Активные</span>
+                <span><span class="legend-badge legend-done"></span>Завершённые</span>
+                <span><span class="legend-badge legend-high"></span>Контур: высокий приоритет</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="depsModal" class="modal" aria-hidden="true">
+        <div class="modal-content">
+            <div class="modal-title" id="depsModalTitle">Связи задачи</div>
+            <div class="deps-list" id="depsList"></div>
+            <div class="modal-actions">
+                <button class="btn" id="depsCancelBtn">Отмена</button>
+                <button class="btn" id="depsSaveBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/cytoscape@3.26.0/dist/cytoscape.min.js"></script>
+    <script>
+        class TodoApp {
+            constructor() {
+                this.tasks = this.loadTasks();
+                this.currentFilter = 'all';
+                this.currentView = 'listView';
+                this.calendarDate = new Date();
+                this.selectedTaskForDeps = null;
+                this.initElements();
+                this.initEventListeners();
+                this.renderAll();
+            }
+
+            initElements() {
+                this.taskInput = document.getElementById('taskInput');
+                this.prioritySelect = document.getElementById('prioritySelect');
+                this.categorySelect = document.getElementById('categorySelect');
+                this.dueDateInput = document.getElementById('dueDateInput');
+                this.addBtn = document.getElementById('addBtn');
+                this.taskList = document.getElementById('taskList');
+                this.emptyState = document.getElementById('emptyState');
+                this.filterBtns = document.querySelectorAll('.filter-btn');
+                this.tabs = document.querySelectorAll('.tab');
+                this.views = {
+                    listView: document.getElementById('listView'),
+                    calendarView: document.getElementById('calendarView'),
+                    graphView: document.getElementById('graphView')
+                };
+                this.calendarTitle = document.getElementById('calendarTitle');
+                this.calendarGrid = document.getElementById('calendarGrid');
+                this.calendarGridWeekdays = document.getElementById('calendarGridWeekdays');
+
+                // Modal
+                this.depsModal = document.getElementById('depsModal');
+                this.depsList = document.getElementById('depsList');
+                this.depsSaveBtn = document.getElementById('depsSaveBtn');
+                this.depsCancelBtn = document.getElementById('depsCancelBtn');
+                this.depsModalTitle = document.getElementById('depsModalTitle');
+            }
+
+            initEventListeners() {
+                this.addBtn.addEventListener('click', () => this.addTask());
+                this.taskInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addTask();
+                });
+                this.filterBtns.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.filterBtns.forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentFilter = e.target.dataset.filter;
+                        this.renderList();
+                    });
+                });
+                this.tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        this.tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        this.switchView(tab.dataset.view);
+                    });
+                });
+                document.getElementById('prevMonth').addEventListener('click', () => {
+                    this.calendarDate.setMonth(this.calendarDate.getMonth() - 1);
+                    this.renderCalendar();
+                });
+                document.getElementById('nextMonth').addEventListener('click', () => {
+                    this.calendarDate.setMonth(this.calendarDate.getMonth() + 1);
+                    this.renderCalendar();
+                });
+                document.getElementById('todayMonth').addEventListener('click', () => {
+                    this.calendarDate = new Date();
+                    this.renderCalendar();
+                });
+                this.depsCancelBtn.addEventListener('click', () => this.hideDepsModal());
+                this.depsSaveBtn.addEventListener('click', () => this.saveDeps());
+            }
+
+            addTask() {
+                const text = this.taskInput.value.trim();
+                if (!text) {
+                    alert('Введите текст задачи!');
+                    return;
+                }
+                const task = {
+                    id: Date.now(),
+                    text: text,
+                    priority: this.prioritySelect.value,
+                    category: this.categorySelect.value,
+                    completed: false,
+                    dueDate: this.dueDateInput.value || null,
+                    dependencies: [],
+                    createdAt: new Date().toLocaleString('ru-RU', {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit'
+                    })
+                };
+                this.tasks.unshift(task);
+                this.saveTasks();
+                this.taskInput.value = '';
+                this.dueDateInput.value = '';
+                this.renderAll();
+            }
+
+            toggleTask(id) {
+                const task = this.tasks.find(t => t.id === id);
+                if (task) {
+                    task.completed = !task.completed;
+                    this.saveTasks();
+                    this.renderAll();
+                }
+            }
+
+            deleteTask(id) {
+                if (confirm('Удалить задачу из кодекса?')) {
+                    this.tasks = this.tasks.filter(t => t.id !== id);
+                    // Также удалить её из зависимостей других задач
+                    this.tasks.forEach(t => {
+                        t.dependencies = (t.dependencies || []).filter(did => did !== id);
+                    });
+                    this.saveTasks();
+                    this.renderAll();
+                }
+            }
+
+            editTask(id) {
+                const task = this.tasks.find(t => t.id === id);
+                if (!task) return;
+                const newText = prompt('Редактировать задачу:', task.text);
+                if (newText && newText.trim()) {
+                    task.text = newText.trim();
+                }
+                const newDue = prompt('Срок (ГГГГ-ММ-ДД) или пусто:', task.dueDate || '');
+                if (newDue !== null) {
+                    task.dueDate = newDue.trim() || null;
+                }
+                this.saveTasks();
+                this.renderAll();
+            }
+
+            openDepsModal(id) {
+                this.selectedTaskForDeps = id;
+                const task = this.tasks.find(t => t.id === id);
+                if (!task) return;
+                this.depsModalTitle.textContent = `Связи: ${task.text}`;
+                const others = this.tasks.filter(t => t.id !== id);
+                const selected = new Set(task.dependencies || []);
+                this.depsList.innerHTML = others.map(t => {
+                    const checked = selected.has(t.id) ? 'checked' : '';
+                    return `<label class="deps-item"><input type="checkbox" data-id="${t.id}" ${checked}> ${t.text}</label>`;
+                }).join('');
+                this.depsModal.classList.add('show');
+            }
+
+            hideDepsModal() {
+                this.depsModal.classList.remove('show');
+                this.selectedTaskForDeps = null;
+            }
+
+            saveDeps() {
+                if (!this.selectedTaskForDeps) return;
+                const task = this.tasks.find(t => t.id === this.selectedTaskForDeps);
+                if (!task) return;
+                const ids = Array.from(this.depsList.querySelectorAll('input[type="checkbox"]:checked')).map(i => parseInt(i.dataset.id));
+                task.dependencies = ids;
+                this.saveTasks();
+                this.hideDepsModal();
+                this.renderAll();
+            }
+
+            getFilteredTasks() {
+                switch (this.currentFilter) {
+                    case 'active':
+                        return this.tasks.filter(t => !t.completed);
+                    case 'completed':
+                        return this.tasks.filter(t => t.completed);
+                    case 'high':
+                        return this.tasks.filter(t => t.priority === 'high');
+                    default:
+                        return this.tasks;
+                }
+            }
+
+            renderAll() {
+                this.renderList();
+                this.renderCalendar();
+                this.renderGraph();
+                this.updateStats();
+            }
+
+            renderList() {
+                const filteredTasks = this.getFilteredTasks();
+                if (filteredTasks.length === 0) {
+                    this.taskList.style.display = 'none';
+                    this.emptyState.style.display = 'block';
+                } else {
+                    this.taskList.style.display = 'block';
+                    this.emptyState.style.display = 'none';
+                    this.taskList.innerHTML = filteredTasks.map(task => this.createTaskHTML(task)).join('');
+                }
+                this.attachTaskEventListeners();
+            }
+
+            createTaskHTML(task) {
+                const categoryIcons = { coding: '⌨', bug: '⚠', feature: '✧', docs: '📖', testing: '⚗', review: '👁' };
+                const priorityLabels = { high: 'Высокий', medium: 'Средний', low: 'Низкий' };
+                const due = task.dueDate ? `<span>⏳ ${task.dueDate}</span>` : '';
+                const depsCount = (task.dependencies || []).length;
+                const depsInfo = depsCount ? `<span>⤷ ${depsCount}</span>` : '';
+                return `
+                    <li class="task-item priority-${task.priority} ${task.completed ? 'completed' : ''}" data-id="${task.id}">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''}>
+                        <div class="task-content">
+                            <div class="task-text">${task.text}</div>
+                            <div class="task-meta">
+                                <span class="task-badge priority-${task.priority}">${priorityLabels[task.priority]}</span>
+                                <span class="category-badge">${categoryIcons[task.category]} ${task.category}</span>
+                                ${due}
+                                ${depsInfo}
+                                <span>${task.createdAt}</span>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-btn deps-btn" title="Связи">⤷</button>
+                            <button class="task-btn edit-btn">✎</button>
+                            <button class="task-btn delete-btn">✕</button>
+                        </div>
+                    </li>`;
+            }
+
+            attachTaskEventListeners() {
+                document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        const id = parseInt(e.target.closest('.task-item').dataset.id);
+                        this.toggleTask(id);
+                    });
+                });
+                document.querySelectorAll('.edit-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = parseInt(e.target.closest('.task-item').dataset.id);
+                        this.editTask(id);
+                    });
+                });
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = parseInt(e.target.closest('.task-item').dataset.id);
+                        this.deleteTask(id);
+                    });
+                });
+                document.querySelectorAll('.deps-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = parseInt(e.target.closest('.task-item').dataset.id);
+                        this.openDepsModal(id);
+                    });
+                });
+            }
+
+            updateStats() {
+                const total = this.tasks.length;
+                const active = this.tasks.filter(t => !t.completed).length;
+                const completed = this.tasks.filter(t => t.completed).length;
+                document.getElementById('totalTasks').textContent = total;
+                document.getElementById('activeTasks').textContent = active;
+                document.getElementById('completedTasks').textContent = completed;
+            }
+
+            renderCalendar() {
+                // Weekdays header
+                const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+                this.calendarGridWeekdays.innerHTML = weekdays.map(w => `<div class="calendar-weekday">${w}</div>`).join('');
+                const year = this.calendarDate.getFullYear();
+                const month = this.calendarDate.getMonth();
+                const firstOfMonth = new Date(year, month, 1);
+                const startDay = (firstOfMonth.getDay() + 6) % 7; // Monday=0
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const daysInPrev = new Date(year, month, 0).getDate();
+                this.calendarTitle.textContent = firstOfMonth.toLocaleString('ru-RU', { month: 'long', year: 'numeric' });
+                const cells = [];
+                const todayIso = new Date().toISOString().slice(0,10);
+                for (let i = 0; i < 42; i++) {
+                    const dayNum = i - startDay + 1;
+                    let date, other = false;
+                    if (dayNum < 1) { date = new Date(year, month - 1, daysInPrev + dayNum); other = true; }
+                    else if (dayNum > daysInMonth) { date = new Date(year, month + 1, dayNum - daysInMonth); other = true; }
+                    else { date = new Date(year, month, dayNum); }
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const iso = `${yyyy}-${mm}-${dd}`;
+                    const tasks = this.tasks.filter(t => (t.dueDate || '').slice(0,10) === iso);
+                    const tasksHTML = tasks.map(t => `<div class="calendar-task" data-id="${t.id}">${t.text}</div>`).join('');
+                    cells.push(`<div class="calendar-cell ${other ? 'other-month' : ''} ${iso===todayIso?'today':''}" data-date="${iso}"><div class="calendar-day-number">${date.getDate()}</div>${tasksHTML}</div>`);
+                }
+                this.calendarGrid.innerHTML = cells.join('');
+                // delegate events: open task on click; add new on dblclick
+                this.calendarGrid.querySelectorAll('.calendar-task').forEach(el => {
+                    el.addEventListener('click', (e) => {
+                        const id = parseInt(e.currentTarget.dataset.id);
+                        this.editTask(id);
+                    });
+                });
+                this.calendarGrid.querySelectorAll('.calendar-cell').forEach(cell => {
+                    cell.addEventListener('dblclick', () => {
+                        const date = cell.dataset.date;
+                        const text = prompt(`Новая задача на ${date}:`);
+                        if (text && text.trim()) {
+                            const quick = {
+                                id: Date.now(), text: text.trim(), priority: 'medium', category: 'coding', completed: false,
+                                dueDate: date, dependencies: [],
+                                createdAt: new Date().toLocaleString('ru-RU', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+                            };
+                            this.tasks.unshift(quick);
+                            this.saveTasks();
+                            this.renderAll();
+                        }
+                    });
+                });
+            }
+
+            renderGraph() {
+                const container = document.getElementById('graph');
+                if (!container || !window.cytoscape) return;
+                const elements = [];
+                const idToTask = new Map(this.tasks.map(t => [t.id, t]));
+                this.tasks.forEach(t => {
+                    elements.push({ data: { id: String(t.id), label: t.text, completed: t.completed, priority: t.priority } });
+                    (t.dependencies || []).forEach(depId => {
+                        if (idToTask.has(depId)) {
+                            elements.push({ data: { id: `${depId}->${t.id}` , source: String(depId), target: String(t.id) } });
+                        }
+                    });
+                });
+                if (this.cy) { this.cy.destroy(); }
+                this.cy = cytoscape({
+                    container,
+                    elements,
+                    layout: { name: 'cose', animate: true, animationDuration: 600, padding: 20, randomize: true, nodeRepulsion: 12000, idealEdgeLength: 100, edgeElasticity: 0.2, gravity: 1, numIter: 1500 },
+                    style: [
+                        { selector: 'node', style: {
+                            'background-color': '#1f1f1f',
+                            'border-width': 1, 'border-color': '#5a5a5a',
+                            'label': '', 'text-opacity': 0, 'color': '#e8e8e8', 'font-size': 12,
+                            'text-wrap': 'wrap', 'text-max-width': 180,
+                            'shape': 'round-rectangle', 'width': 18, 'height': 18,
+                            'transition-property': 'border-color, background-color, width, height, text-opacity',
+                            'transition-duration': '200ms',
+                        }},
+                        { selector: 'node[completed = 1], node[completed = true]', style: { 'background-color': '#2f2f2f', 'color': '#b0b0b0' }},
+                        { selector: 'node[priority = "high"]', style: { 'border-color': '#ffffff', 'border-width': 2 }},
+                        { selector: 'edge', style: { 'line-color': '#9a9a9a', 'target-arrow-color': '#9a9a9a', 'target-arrow-shape': 'triangle', 'curve-style': 'unbundled-bezier', 'control-point-distances': 30, 'width': 1 }},
+                        { selector: 'node:selected', style: { 'width': 28, 'height': 28, 'label': 'data(label)', 'text-opacity': 1, 'z-index': 9999 }},
+                        { selector: 'node.hover', style: { 'width': 24, 'height': 24, 'label': 'data(label)', 'text-opacity': 1 }},
+                    ]
+                });
+                // hover/click reveal labels
+                this.cy.on('mouseover', 'node', (e) => e.target.addClass('hover'));
+                this.cy.on('mouseout', 'node', (e) => e.target.removeClass('hover'));
+                // re-run layout for a bit of physics when graph opens
+                const runLayout = () => {
+                    const l = this.cy.layout({ name: 'cose', animate: true, animationDuration: 600, padding: 20, randomize: true, nodeRepulsion: 12000, idealEdgeLength: 100, edgeElasticity: 0.2, gravity: 1, numIter: 1500 });
+                    l.run();
+                };
+                runLayout();
+            }
+
+            switchView(viewId) {
+                this.currentView = viewId;
+                Object.entries(this.views).forEach(([id, el]) => {
+                    if (id === viewId) el.classList.add('active'); else el.classList.remove('active');
+                });
+                if (viewId === 'calendarView') this.renderCalendar();
+                if (viewId === 'graphView') this.renderGraph();
+            }
+
+            saveTasks() {
+                localStorage.setItem('devTodoTasksGothicBWv2', JSON.stringify(this.tasks));
+            }
+
+            loadTasks() {
+                const savedNew = localStorage.getItem('devTodoTasksGothicBWv2');
+                if (savedNew) {
+                    return JSON.parse(savedNew);
+                }
+                const legacy = localStorage.getItem('devTodoTasksGothic');
+                if (!legacy) return [];
+                try {
+                    const arr = JSON.parse(legacy);
+                    // migrate legacy tasks
+                    return arr.map(t => ({
+                        id: t.id, text: t.text, priority: t.priority || 'medium', category: t.category || 'coding',
+                        completed: !!t.completed, createdAt: t.createdAt || new Date().toISOString(),
+                        dueDate: null, dependencies: []
+                    }));
+                } catch {
+                    return [];
+                }
+            }
+        }
+
+        const app = new TodoApp();
+    </script>
+</body>
+</html>

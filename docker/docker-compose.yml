@@ -1,0 +1,16 @@
+services:
+  profile-runner:
+    build:
+      context: ..
+      dockerfile: docker/profile-runner.Dockerfile
+    environment:
+      PROFILE_ID: demo
+      PROFILE_CONFIG_PATH: /config/demo-profile.json
+      TARGET_URL: ${TARGET_URL:-https://example.com/}
+      KEEP_ALIVE_SECONDS: ${KEEP_ALIVE_SECONDS:-0}
+      PROFILES_DIR: /profiles
+      ARTIFACTS_DIR: /artifacts
+    volumes:
+      - ./config:/config:ro
+      - ./profiles:/profiles
+      - ./artifacts:/artifacts

@@ -1,0 +1,16 @@
+{
+  "name": "antic-gothic-profiles",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "src/backend/server.js",
+  "scripts": {
+    "start": "node src/backend/server.js",
+    "profile:runner": "node src/backend/profile/profile-runner.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "playwright": "1.49.0"
+  }
+}
+

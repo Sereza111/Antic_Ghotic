@@ -1,0 +1,26 @@
+{
+  "id": "demo",
+  "name": "Demo profile",
+  "description": "Minimal profile для docker-demo запуска",
+  "browserEngine": "chromium",
+  "osFamily": "windows",
+  "fingerprint": {
+    "canvas": { "mode": "original" },
+    "webgl": { "mode": "original" },
+    "webrtc": { "mode": "disabled" },
+    "fonts": { "enabled": false },
+    "navigator": {
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    },
+    "screen": { "width": 1280, "height": 720 },
+    "timezone": { "tzIanaName": "Europe/Moscow", "tzOffsetMinutes": 180 }
+  },
+  "automation": {
+    "scriptIds": [],
+    "minDelayMs": 500,
+    "maxDelayMs": 1500
+  },
+  "createdAt": "2026-05-27T00:00:00.000Z",
+  "updatedAt": "2026-05-27T00:00:00.000Z"
+}
+
